@@ -1,49 +1,54 @@
 package _02_Chat_Application;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.net.Socket;
+
+import javax.swing.JOptionPane;
 
 public class Client {
 
-	DatagramSocket socket;
-	int port;
-	InetAddress ip;
+	private String ipAddress;
+	private int port;
 	
-	public Client(String ip) {
-		try {
-			this.ip = InetAddress.getByName(ip);
-			socket = new DatagramSocket(6699, InetAddress.getByName(ip));
-		} catch (SocketException e) {
-			e.printStackTrace();
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
+	private Socket socket;
+	
+	private boolean running = false;
+	
+	private DataOutputStream os;
+	private DataInputStream is;
+	
+	public Client(String ipAddress, int port) {
+		this.ipAddress = ipAddress;
+		this.port = port;
 	}
 	
 	public void run() {
-		while(true) {
-			byte[] data = new byte[1024];
-			
-			DatagramPacket packet = new DatagramPacket(data, data.length);
-			
+		running = true;
+		while(running) {
 			try {
-				socket.receive(packet);
+				socket = new Socket(ipAddress, port);
+				
+				is = new DataInputStream(socket.getInputStream());
+				os = new DataOutputStream(socket.getOutputStream());
+				
+				os.flush();
+				
+				while(socket.isConnected()) {
+					JOptionPane.showMessageDialog(null, is.readUTF());
+				}
+				
 			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			System.out.println(new String(packet.getData()));
+				running = false;
+			} 
 		}
 	}
 	
-	public void sendData(byte[] bytes) {
-		DatagramPacket packet = new DatagramPacket(bytes, bytes.length, ip, port);
+	public void sendMessage(String message) {
 		try {
-			socket.send(packet);
+			os.writeUTF(message);
+			os.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
